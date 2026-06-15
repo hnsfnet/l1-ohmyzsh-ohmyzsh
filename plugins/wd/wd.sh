@@ -119,15 +119,18 @@ wd_getdir()
 {
     local name_arg=$1
 
-    point=$(wd_show "$name_arg")
-    dir=${point:28+$#name_arg+7}
-
     if [[ -z $name_arg ]]; then
         wd_exit_fail "You must enter a warp point"
-        break
-    elif [[ -z $dir ]]; then
+        return 1
+    fi
+
+    # resolve the directory straight from the warp point data structure
+    # instead of parsing wd_show's colorized output
+    dir=${points[$name_arg]}
+
+    if [[ -z $dir ]]; then
         wd_exit_fail "Unknown warp point '${name_arg}'"
-        break
+        return 1
     fi
 }
 
@@ -384,13 +387,13 @@ wd_list_all()
 
 wd_ls()
 {
-    wd_getdir "$1"
+    wd_getdir "$1" || return
     ls "${dir/#\~/$HOME}"
 }
 
 wd_open()
 {
-    wd_getdir "$1"
+    wd_getdir "$1" || return
     if command -v open >/dev/null 2>&1; then
         # MacOS, Ubuntu (alias)
         open "${dir/#\~/$HOME}"
@@ -405,7 +408,7 @@ wd_open()
 
 wd_path()
 {
-    wd_getdir "$1"
+    wd_getdir "$1" || return
     echo "$(echo "$dir" | sed "s:~:${HOME}:g")"
 }
 

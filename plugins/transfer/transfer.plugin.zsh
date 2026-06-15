@@ -50,9 +50,9 @@ EOF
   if ! tty -s; then
     # transfer from pipe
     if (( crypt )); then
-      gpg -aco - | curl -X PUT --progress-bar -T - "https://transfer.sh/$item" >> $tmpfile
+      gpg -aco - | curl -X PUT --progress-bar -T - "https://transfer.sh/$item" >> "$tmpfile"
     else
-      curl --progress-bar --upload-file - "https://transfer.sh/$item" >> $tmpfile
+      curl --progress-bar --upload-file - "https://transfer.sh/$item" >> "$tmpfile"
     fi
   else
     basename=$(basename "$item" | sed -e 's/[^a-zA-Z0-9._-]/-/g')
@@ -65,33 +65,34 @@ EOF
     if [[ -d $item ]]; then
       # tar directory and transfer
       tarfile=$(mktemp -t transferXXX.tar.gz)
-      cd $(dirname $item) || {
-        echo "Error: Could not change to directory $(dirname $item)"
+      # Archive inside a subshell so the directory change cannot leak into the
+      # caller's shell, and quote every path so spaces don't get word-split.
+      if ! ( cd "$(dirname "$item")" && tar -czf "$tarfile" "$(basename "$item")" ); then
+        echo "Error: Could not archive directory $item"
+        rm -f "$tarfile" "$tmpfile"
         return 1
-      }
-
-      tar -czf $tarfile $(basename $item)
-      if (( crypt )); then
-        gpg -cao - "$tarfile" | curl --progress-bar -T "-" "https://transfer.sh/$basename.tar.gz.gpg" >> $tmpfile
-      else
-        curl --progress-bar --upload-file "$tarfile" "https://transfer.sh/$basename.tar.gz" >> $tmpfile
       fi
-      rm -f $tarfile
+      if (( crypt )); then
+        gpg -cao - "$tarfile" | curl --progress-bar -T "-" "https://transfer.sh/$basename.tar.gz.gpg" >> "$tmpfile"
+      else
+        curl --progress-bar --upload-file "$tarfile" "https://transfer.sh/$basename.tar.gz" >> "$tmpfile"
+      fi
+      rm -f "$tarfile"
     else
       # transfer file
       if (( crypt )); then
-        gpg -cao - "$item" | curl --progress-bar -T "-" "https://transfer.sh/$basename.gpg" >> $tmpfile
+        gpg -cao - "$item" | curl --progress-bar -T "-" "https://transfer.sh/$basename.gpg" >> "$tmpfile"
       else
-        curl --progress-bar --upload-file "$item" "https://transfer.sh/$basename" >> $tmpfile
+        curl --progress-bar --upload-file "$item" "https://transfer.sh/$basename" >> "$tmpfile"
       fi
     fi
   fi
 
   # cat output link
-  cat $tmpfile
+  cat "$tmpfile"
   # add newline
   echo
 
   # cleanup
-  rm -f $tmpfile
+  rm -f "$tmpfile"
 }

@@ -57,41 +57,43 @@ EOF
   else
     basename=$(basename "$item" | sed -e 's/[^a-zA-Z0-9._-]/-/g')
 
-    if [[ ! -e $item ]]; then
+    if [[ ! -e "$item" ]]; then
       echo "File $item doesn't exist."
+      rm -f "$tmpfile"
       return 1
     fi
 
-    if [[ -d $item ]]; then
+    if [[ -d "$item" ]]; then
       # tar directory and transfer
       tarfile=$(mktemp -t transferXXX.tar.gz)
-      cd $(dirname $item) || {
-        echo "Error: Could not change to directory $(dirname $item)"
+      # Use -C so the caller's working directory is never changed, and quote
+      # every expansion so paths containing spaces are packed reliably.
+      if ! tar -C "$(dirname "$item")" -czf "$tarfile" "$(basename "$item")"; then
+        echo "Error: Could not create archive for $item"
+        rm -f "$tarfile" "$tmpfile"
         return 1
-      }
-
-      tar -czf $tarfile $(basename $item)
-      if (( crypt )); then
-        gpg -cao - "$tarfile" | curl --progress-bar -T "-" "https://transfer.sh/$basename.tar.gz.gpg" >> $tmpfile
-      else
-        curl --progress-bar --upload-file "$tarfile" "https://transfer.sh/$basename.tar.gz" >> $tmpfile
       fi
-      rm -f $tarfile
+      if (( crypt )); then
+        gpg -cao - "$tarfile" | curl --progress-bar -T "-" "https://transfer.sh/$basename.tar.gz.gpg" >> "$tmpfile"
+      else
+        curl --progress-bar --upload-file "$tarfile" "https://transfer.sh/$basename.tar.gz" >> "$tmpfile"
+      fi
+      rm -f "$tarfile"
     else
       # transfer file
       if (( crypt )); then
-        gpg -cao - "$item" | curl --progress-bar -T "-" "https://transfer.sh/$basename.gpg" >> $tmpfile
+        gpg -cao - "$item" | curl --progress-bar -T "-" "https://transfer.sh/$basename.gpg" >> "$tmpfile"
       else
-        curl --progress-bar --upload-file "$item" "https://transfer.sh/$basename" >> $tmpfile
+        curl --progress-bar --upload-file "$item" "https://transfer.sh/$basename" >> "$tmpfile"
       fi
     fi
   fi
 
   # cat output link
-  cat $tmpfile
+  cat "$tmpfile"
   # add newline
   echo
 
   # cleanup
-  rm -f $tmpfile
+  rm -f "$tmpfile"
 }

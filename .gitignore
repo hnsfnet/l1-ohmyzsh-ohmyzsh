@@ -1,21 +1,37 @@
-# custom files
-custom/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+*.whl
 
-# temp files directories
-cache/
-log/
+# Go
+vendor/
+go.sum
 
-# Vim swap/backup files
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
+*~
 
-# macOS system files
+# OS
 .DS_Store
-
-# editor configs
-.vscode
-.idea
-
-# zcompile cached files
-*.zwc
-*.zwc.old
+Thumbs.db

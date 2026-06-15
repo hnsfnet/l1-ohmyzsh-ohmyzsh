@@ -28,10 +28,16 @@ lsk() {
 # Example
 #   sqs-send user user.json
 sqs-send(){
-  if [ -z "$1" ]; then
+  if [ -z "$1" ] || [ -z "$2" ]; then
 	  echo "Use: sqs-send <queue> <payload>"
 	  return 1
   fi
 
-  curl -X POST "http://localhost:4566/000000000000/$1" -d "Action=SendMessage" -d "MessageBody=$(cat $2)"
+  if [ ! -r "$2" ]; then
+	  echo "Error: payload file not found or not readable: $2" >&2
+	  return 1
+  fi
+
+  curl --fail --silent --show-error -X POST "http://localhost:4566/000000000000/$1" -d "Action=SendMessage" -d "MessageBody=$(cat "$2")"
+  return $?
 }
